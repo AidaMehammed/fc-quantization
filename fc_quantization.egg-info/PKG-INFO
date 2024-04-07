@@ -1,0 +1,26 @@
+Metadata-Version: 2.1
+Name: fc-quantization
+Version: 0.0.1
+Summary: FC-Quantization
+Home-page: https://github.com/AidaMehammed/fc-quantization
+Author: Aida Mehammed
+Author-email: aida.mehammed@studium.uni-hamburg.de
+License: UNKNOWN
+Project-URL: Bug Tracker, https://github.com/AidaMehammed/fc-quantization
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# [FeatureCloud Quantization](https://github.com/AidaMehammed/Quantization_CNN)
+### Model Compression with Quantization
+
+The FC Quantization package provides a comprehensive solution for model compression through quantization techniques. Integrated with federated learning frameworks and built upon the capabilities of PyTorch's quantization functionalities, this package facilitates efficient distributed training suitable for various machine learning tasks.
+## Install FeatureCloud Quantization
+```shell
+pip install fc-quantization
+```
+
+

@@ -1,0 +1,8 @@
+LICENSE
+README.md
+setup.py
+fc_quantization.egg-info/PKG-INFO
+fc_quantization.egg-info/SOURCES.txt
+fc_quantization.egg-info/dependency_links.txt
+fc_quantization.egg-info/requires.txt
+fc_quantization.egg-info/top_level.txt
