@@ -1,25 +1,21 @@
 from FeatureCloud.app.engine.app import AppState
 from typing import TypedDict
-from torch.utils.data import DataLoader
 import torch
-import utils
 import io
 
+import fc_quantization.Compress.utils as pf
 
 
 
 class QuantType(TypedDict):
     model: torch.nn.Module
-    train_loader: DataLoader
-    epochs: int
-    learning_rate: float
     backend: str
     quant_type: str
 
 
 class QuantAppState(AppState):
 
-    def configure_quant(self, epochs: int = 0, learning_rate : float = 0.001, model: torch.nn.Module = None, train_loader: DataLoader = None, backend: str = 'qnnpack', quant_type: str = 'post_static'):
+    def configure_quant(self, model: torch.nn.Module = None, backend: str = 'qnnpack', quant_type: str = 'post_static'):
 
         '''
         Configures the quantization settings for your model.
@@ -28,12 +24,6 @@ class QuantAppState(AppState):
         ----------
         model : torch.nn.Module, optional
             Your PyTorch model. Default is None.
-        epochs : int, optional
-            Number of training epochs for quantization-aware training. Default is 0.
-        learning_rate : float, optional
-            Learning rate for quantization-aware training. Default is 0.001.
-        train_loader : DataLoader, optional
-            DataLoader for training data. Default is None.
         backend : str, optional
             Backend for quantization.
             Supports 'fbgemm' and 'qnnpack'.
@@ -52,9 +42,6 @@ class QuantAppState(AppState):
         updated_quant = default_quant.copy()
 
         updated_quant['model'] = model
-        updated_quant['epochs'] = epochs
-        updated_quant['train_loader'] = train_loader
-        updated_quant['learning_rate'] = learning_rate
         updated_quant['backend'] = backend
         updated_quant['quant_type'] = quant_type
 
@@ -84,8 +71,6 @@ class QuantAppState(AppState):
             reference_model = self.load('reference_model')
             backend = self.load('backend')
 
-            print(data)
-            self.log(f'Size of model before rebuild: {utils.print_size_of_model(reference_model)} MB')
 
             reconstructed_models = []
             # reconstruct data after quantization
@@ -102,9 +87,9 @@ class QuantAppState(AppState):
                 client_model.load_state_dict(torch.load(data[i]))
 
 
-                rebuild_model = utils.revert_quantized_model(client_model, reference_model)
+                rebuild_model = pf.revert_quantized_model(client_model, reference_model)
 
-                reconstructed_models.append(utils.get_weights(rebuild_model))
+                reconstructed_models.append(pf.get_weights(rebuild_model))
 
             data = reconstructed_models
 
@@ -126,30 +111,30 @@ class QuantAppState(AppState):
             data : list
                 List of data sent to the coordinator.
             '''
-        if use_quant :
+        if use_quant:
             default_quant = self.load('default_quant')
             quant_type = default_quant['quant_type']
             model = data
-            epochs = default_quant['epochs']
-            train_loader = default_quant['train_loader']
-            learning_rate = default_quant['learning_rate']
             backend = default_quant['backend']
 
             self.store('default_quant', default_quant)
 
+            self.log('Start Quantization...')
+            self.log(f'Size of model before quantization: {pf.print_size_of_model(model)} MB')
 
             if quant_type == 'post_static':
                 self.log('Apply Post-Static-Quantization...')
-                model = utils.post_static_quant(model, train_loader=train_loader,qconfig=backend)
+                model = torch.quantization.convert(model, inplace=False)
 
             elif quant_type == 'qat':
                 self.log('Apply QAT-Quantization...')
-                model = utils.apply_qat(model, train_loader, qconfig=backend, epochs=epochs,
-                             lr=learning_rate)
+                model = torch.quantization.convert(model, inplace=False)
+
 
             else:
                 raise ValueError('quant_type must be either post_static or qat')
 
+            self.log(f'Size of model after quantization: {pf.print_size_of_model(model)} MB')
 
             b = io.BytesIO()
             torch.save(model.state_dict(), b)
